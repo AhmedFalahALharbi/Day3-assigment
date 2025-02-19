@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Validation</title>
+    <style>
+        body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+h2 {
+    text-align: center;
+    color: #444;
+}
+
+form {
+    background: #fff;
+    padding: 20px;
+    max-width: 400px;
+    margin: 0 auto;
+    border-radius: 10px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 10px;
+}
+
+button:hover {
+    background: #218838;
+}
+
+.error {
+    color: red;
+    font-size: 14px;
+}
+
+.submit {
+    color: green;
+    font-size: 15px;
+    display: block;
+    margin-top: 10px;
+}
+
+#usersList {
+    max-width: 500px;
+    margin: 20px auto;
+    padding: 10px;
+    background: white;
+    border-radius: 5px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#usersList p {
+    padding: 8px;
+    border-bottom: 1px solid #ddd;
+}
+
+#usersList p:last-child {
+    border-bottom: none;
+}
+
+#fetchUser {
+    display: block;
+    margin: 20px auto;
+    width: 200px;
+}
+
+.loader {
+    display: none;
+    text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    color: #007bff;
+    margin-top: 10px;
+}
+
+    </style>
+</head>
+<body>
+
+    <h2>Register</h2>
+    <form id="myForm">
+        <input type="text" id="name" placeholder="Full Name">
+        <span id="nameError" class="error"></span>
+
+        <input type="email" id="email" placeholder="Email">
+        <span id="emailError" class="error"></span>
+
+        <input type="password" id="password" placeholder="Password">
+        <span id="passwordError" class="error"></span>
+
+        <button type="submit">Submit</button>
+        <span id="submitMessage" class="submit"></span>
+    </form>
+    <br>
+    <div>
+        <button id="fetchUser">Display Data</button>
+        <div id="loader" class="loader"> Loading...</div>
+        <div id="usersList"></div>
+    </div>
+
+    <script>
+        const form = document.getElementById("myForm");
+        const nameInput = document.getElementById("name");
+        const emailInput = document.getElementById("email");
+        const passwordInput = document.getElementById("password");
+        const nameError = document.getElementById("nameError");
+        const emailError = document.getElementById("emailError");
+        const passwordError = document.getElementById("passwordError");
+        const submitMessage = document.getElementById("submitMessage");
+        const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        const validatePassword = (password) => {
+            const commonWeakPasswords = ["123456", "password", "qwerty", "abc123", "letmein", "123123"];
+            return !commonWeakPasswords.includes(password) &&
+                /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password);
+        };
+
+        const showError = (element, message) => {
+            element.innerText = message;
+        };
+
+        const clearError = (element) => {
+            element.innerText = "";
+        };
+
+        form.addEventListener("submit", (event) => {
+            event.preventDefault();
+            let isValid = true;
+
+            if (!nameInput.value.trim()) {
+                showError(nameError, "Name is required");
+                isValid = false;
+            } else {
+                clearError(nameError);
+            }
+
+            if (!emailInput.value.trim()) {
+                showError(emailError, "Email is required");
+                isValid = false;
+            } else if (!validateEmail(emailInput.value.trim())) {
+                showError(emailError, "Invalid email format");
+                isValid = false;
+            } else {
+                clearError(emailError);
+            }
+
+            if (!passwordInput.value.trim()) {
+                showError(passwordError, "Password is required");
+                isValid = false;
+            } else if (!validatePassword(passwordInput.value.trim())) {
+                showError(passwordError, "Password must be at least 8 characters long, include an uppercase letter, a lowercase letter, a number, and a special character");
+                isValid = false;
+            } else {
+                clearError(passwordError);
+            }
+
+            if (isValid) {
+                localStorage.setItem("name", nameInput.value.trim());
+                localStorage.setItem("email", emailInput.value.trim());
+                showError(submitMessage, "Form submitted successfully!");
+                form.reset();
+                
+            }
+        });
+
+        const fetchUserButton = document.getElementById("fetchUser");
+        const usersList = document.getElementById("usersList");
+        const loader = document.getElementById("loader");
+
+        const fetchUsers = async () => {
+            try {
+                loader.style.display = "block";
+                const response = await fetch("https://jsonplaceholder.typicode.com/users");
+                if (!response.ok) throw new Error("Failed to fetch users");
+                
+                const users = await response.json();
+                usersList.innerHTML = users.map(user => `<p><strong>Name:</strong>${user.name} <strong> Email:</strong> ${user.email}</p>`).join("");
+            } catch (error) {
+                usersList.innerHTML = `<p class="error">${error.message}</p>`;
+            } finally {
+                loader.style.display = "none";
+            }
+        };
+        document.addEventListener("DOMContentLoaded", () => {
+            if (localStorage.getItem("name")) nameInput.value = localStorage.getItem("name");
+            if (localStorage.getItem("email")) emailInput.value = localStorage.getItem("email");
+        });
+        fetchUserButton.addEventListener("click", fetchUsers);
+        console.log(localStorage);
+    </script>
+
+</body>
+</html>
